@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grammar Card News Carousel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f7f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #222;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .carousel {
+      position: relative;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+    }
+
+    .slide-area {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .slide-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .nav-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(255, 255, 255, 0.85);
+      color: #222;
+      font-size: 24px;
+      line-height: 42px;
+      cursor: pointer;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+      z-index: 5;
+    }
+
+    .nav-button:hover {
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    .prev {
+      left: 12px;
+    }
+
+    .next {
+      right: 12px;
+    }
+
+    .bottom {
+      padding: 12px 14px 14px;
+      text-align: center;
+    }
+
+    .counter {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 9px;
+    }
+
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      border: none;
+      background: #d0d0d0;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .dot.active {
+      background: #222;
+      width: 22px;
+    }
+
+    .message {
+      padding: 40px 20px;
+      text-align: center;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 480px) {
+      .wrap {
+        padding: 8px;
+      }
+
+      .carousel {
+        border-radius: 14px;
+      }
+
+      .nav-button {
+        width: 36px;
+        height: 36px;
+        font-size: 21px;
+        line-height: 36px;
+      }
+
+      .prev {
+        left: 8px;
+      }
+
+      .next {
+        right: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="carousel">
+      <div class="slide-area" id="slideArea">
+        <div class="message">이미지를 불러오는 중입니다.</div>
+      </div>
+
+      <button class="nav-button prev" id="prevBtn" aria-label="Previous slide">‹</button>
+      <button class="nav-button next" id="nextBtn" aria-label="Next slide">›</button>
+
+      <div class="bottom">
+        <div class="counter" id="counter"></div>
+        <div class="dots" id="dots"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const episode = params.get("ep") || "001";
+    const maxSlides = 20;
+
+    const slideArea = document.getElementById("slideArea");
+    const counter = document.getElementById("counter");
+    const dots = document.getElementById("dots");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    let slides = [];
+    let current = 0;
+    let startX = 0;
+
+    function slidePath(number) {
+      const padded = String(number).padStart(2, "0");
+      return `images/${episode}/slide_${padded}.png`;
+    }
+
+    function checkImage(src, index) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ src, index });
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    async function loadSlides() {
+      const checks = [];
+
+      for (let i = 1; i <= maxSlides; i++) {
+        checks.push(checkImage(slidePath(i), i));
+      }
+
+      const results = await Promise.all(checks);
+      slides = results.filter(Boolean).sort((a, b) => a.index - b.index);
+
+      if (slides.length === 0) {
+        slideArea.innerHTML = `
+          <div class="message">
+            이미지를 찾을 수 없습니다.<br>
+            images/${episode}/ 폴더 안에<br>
+            slide_01.png부터 넣었는지 확인해주세요.
+          </div>
+        `;
+        counter.textContent = "";
+        dots.innerHTML = "";
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
+        return;
+      }
+
+      render();
+    }
+
+    function render() {
+      const item = slides[current];
+      slideArea.innerHTML = `<img src="${item.src}" alt="Grammar Card News slide ${current + 1}">`;
+      counter.textContent = `${current + 1} / ${slides.length}`;
+
+      dots.innerHTML = "";
+      slides.forEach((_, index) => {
+        const dot = document.createElement("button");
+        dot.className = index === current ? "dot active" : "dot";
+        dot.setAttribute("aria-label", `Go to slide ${index + 1}`);
+        dot.addEventListener("click", () => {
+          current = index;
+          render();
+        });
+        dots.appendChild(dot);
+      });
+
+      prevBtn.style.display = slides.length > 1 ? "block" : "none";
+      nextBtn.style.display = slides.length > 1 ? "block" : "none";
+    }
+
+    function goPrev() {
+      current = (current - 1 + slides.length) % slides.length;
+      render();
+    }
+
+    function goNext() {
+      current = (current + 1) % slides.length;
+      render();
+    }
+
+    prevBtn.addEventListener("click", goPrev);
+    nextBtn.addEventListener("click", goNext);
+
+    slideArea.addEventListener("touchstart", (event) => {
+      startX = event.touches[0].clientX;
+    });
+
+    slideArea.addEventListener("touchend", (event) => {
+      const endX = event.changedTouches[0].clientX;
+      const diff = startX - endX;
+
+      if (Math.abs(diff) > 40) {
+        if (diff > 0) {
+          goNext();
+        } else {
+          goPrev();
+        }
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") goPrev();
+      if (event.key === "ArrowRight") goNext();
+    });
+
+    loadSlides();
+  </script>
+</body>
+</html>
