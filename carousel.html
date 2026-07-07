@@ -9,12 +9,11 @@
       box-sizing: border-box;
     }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       background: transparent;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow-x: hidden;
     }
 
@@ -23,24 +22,28 @@
       max-width: 680px;
       margin: 0 auto;
       padding: 0;
+      background: transparent;
     }
 
     .carousel {
-      position: relative;
       width: 100%;
       background: transparent;
-      overflow: hidden;
+    }
+
+    .slide-shell {
+      position: relative;
+      width: 100%;
     }
 
     .slide-area {
       position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
-      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      background: transparent;
     }
 
     .slide-area img {
@@ -56,62 +59,65 @@
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      width: 38px;
-      height: 38px;
-      border-radius: 999px;
+      width: 34px;
+      height: 34px;
       border: none;
-      background: rgba(255, 255, 255, 0.78);
-      color: #222;
-      font-size: 24px;
-      line-height: 34px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #262626;
+      font-size: 22px;
+      line-height: 32px;
+      text-align: center;
       cursor: pointer;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.16);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.18);
       z-index: 5;
     }
 
     .nav-button:hover {
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 1);
     }
 
     .prev {
-      left: 14px;
+      left: 10px;
     }
 
     .next {
-      right: 14px;
+      right: 10px;
+    }
+
+    .bottom-ui {
+      width: 100%;
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 20px;
     }
 
     .dots {
-      position: absolute;
-      left: 50%;
-      bottom: 12px;
-      transform: translateX(-50%);
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 4px 6px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.16);
-      backdrop-filter: blur(4px);
-      z-index: 6;
+      gap: 6px;
+      flex-wrap: nowrap;
     }
 
     .dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 999px;
+      width: 6px;
+      height: 6px;
       border: none;
+      border-radius: 999px;
       background: rgba(0, 0, 0, 0.18);
-      cursor: pointer;
       padding: 0;
+      cursor: pointer;
     }
 
     .dot.active {
-      background: rgba(0, 0, 0, 0.45);
-      width: 10px;
+      background: #555555;
     }
 
     .message {
+      width: 100%;
       padding: 40px 20px;
       text-align: center;
       color: #555;
@@ -122,10 +128,10 @@
 
     @media (max-width: 480px) {
       .nav-button {
-        width: 34px;
-        height: 34px;
-        font-size: 21px;
-        line-height: 30px;
+        width: 30px;
+        height: 30px;
+        font-size: 20px;
+        line-height: 28px;
       }
 
       .prev {
@@ -136,19 +142,18 @@
         right: 8px;
       }
 
+      .bottom-ui {
+        padding-top: 8px;
+        min-height: 18px;
+      }
+
       .dots {
-        bottom: 8px;
-        gap: 4px;
-        padding: 3px 5px;
+        gap: 5px;
       }
 
       .dot {
-        width: 4px;
-        height: 4px;
-      }
-
-      .dot.active {
-        width: 9px;
+        width: 5px;
+        height: 5px;
       }
     }
   </style>
@@ -156,14 +161,18 @@
 <body>
   <div class="wrap">
     <div class="carousel">
-      <div class="slide-area" id="slideArea">
-        <div class="message">이미지를 불러오는 중입니다.</div>
+      <div class="slide-shell">
+        <div class="slide-area" id="slideArea">
+          <div class="message">이미지를 불러오는 중입니다.</div>
+        </div>
+
+        <button class="nav-button prev" id="prevBtn" aria-label="Previous slide">‹</button>
+        <button class="nav-button next" id="nextBtn" aria-label="Next slide">›</button>
       </div>
 
-      <button class="nav-button prev" id="prevBtn" aria-label="Previous slide">‹</button>
-      <button class="nav-button next" id="nextBtn" aria-label="Next slide">›</button>
-
-      <div class="dots" id="dots"></div>
+      <div class="bottom-ui">
+        <div class="dots" id="dots"></div>
+      </div>
     </div>
   </div>
 
@@ -197,7 +206,6 @@
 
     async function loadSlides() {
       const checks = [];
-
       for (let i = 1; i <= maxSlides; i++) {
         checks.push(checkImage(slidePath(i), i));
       }
@@ -238,9 +246,10 @@
         dots.appendChild(dot);
       });
 
-      prevBtn.style.display = slides.length > 1 ? "block" : "none";
-      nextBtn.style.display = slides.length > 1 ? "block" : "none";
-      dots.style.display = slides.length > 1 ? "flex" : "none";
+      const showMulti = slides.length > 1;
+      prevBtn.style.display = showMulti ? "block" : "none";
+      nextBtn.style.display = showMulti ? "block" : "none";
+      dots.style.display = showMulti ? "flex" : "none";
     }
 
     function goPrev() {
@@ -265,11 +274,8 @@
       const diff = startX - endX;
 
       if (Math.abs(diff) > 40) {
-        if (diff > 0) {
-          goNext();
-        } else {
-          goPrev();
-        }
+        if (diff > 0) goNext();
+        else goPrev();
       }
     });
 
